@@ -512,8 +512,8 @@ public class SharkbaitTeleOpBlue extends LinearOpMode {
         BRMotor.setDirection(DcMotor.Direction.FORWARD);
 
 
-        InSlide.setDirection(DcMotor.Direction.REVERSE); //We need to reverse this
-        OtSlideF.setDirection(DcMotor.Direction.REVERSE);
+        InSlide.setDirection(DcMotor.Direction.REVERSE);
+        OtSlideF.setDirection(DcMotor.Direction.REVERSE); //all 3 of these are backwards
         OtSlideM.setDirection(DcMotor.Direction.FORWARD);
         OtSlideB.setDirection(DcMotor.Direction.REVERSE);
 
@@ -658,9 +658,9 @@ public class SharkbaitTeleOpBlue extends LinearOpMode {
                     BLMotor.setPower(SlowModeSpeed[1]);
                     BRMotor.setPower(SlowModeSpeed[0]);
                 }
-            } else if (rt > 0.2 || lt > 0.2) {
+            } else if (rt > 0.2 || rB || lB || lt > 0.2) {
                 if (-gamepad1.left_stick_y > 0) {
-                    if (rt > 0.2) {
+                    if (rt > 0.2 || rB) {
                         FLMotor.setPower(speedfor);
                         FRMotor.setPower(speedbac + (Math.abs(gamepad1.left_stick_y) * 0.5));
                         BLMotor.setPower(speedbac + (Math.abs(gamepad1.left_stick_y) * 0.5));
@@ -672,7 +672,7 @@ public class SharkbaitTeleOpBlue extends LinearOpMode {
                         BRMotor.setPower(speedbac + (Math.abs(gamepad1.left_stick_y) * 0.5));
                     }
                 } else {
-                    if (rt > 0.2) {
+                    if (rt > 0.2 || rB) {
                         FLMotor.setPower(speedfor - (Math.abs(gamepad1.left_stick_y) * 0.5));
                         FRMotor.setPower(speedbac);
                         BLMotor.setPower(speedbac);
@@ -845,17 +845,15 @@ public class SharkbaitTeleOpBlue extends LinearOpMode {
                 new setIsOtCoaxialMoving(true).run();
                 new setOtClawDelay(true).run();
 
-                if (inPosition == 3 || inPosition == 2) {
+                if (inPosition == 3) {
                     new setIsInArmMoving(true).run();
                     new setIsInDiffyMoving(true).run();
-                    LDServoPositions[1] = 0.5;
-                    RDServoPositions[1] = 0.5;
-                    timer.schedule(new MoveInDiffyServoPosition(1), 4 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveInElbowServosPosition(1), 0 *DELAY_BETWEEN_MOVES);
+                    timer.schedule(new MoveInDiffyServoPosition(2), 4 * DELAY_BETWEEN_MOVES);
+                    timer.schedule(new MoveInElbowServosPosition(2), 0 *DELAY_BETWEEN_MOVES);
 
                     timer.schedule(new setIsInArmMoving(false), 4 *DELAY_BETWEEN_MOVES);
                     timer.schedule(new setIsInDiffyMoving(false), 4 *DELAY_BETWEEN_MOVES);
-                    inPosition = 1;
+                    inPosition = 2;
                 }
                timer.schedule(new MoveOtClawServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
                timer.schedule(new MoveOtCoaxialServoPosition(2), 0 * DELAY_BETWEEN_MOVES);

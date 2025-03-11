@@ -1,13 +1,10 @@
 package org.firstinspires.ftc.teamcode;
 
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
-import static org.firstinspires.ftc.teamcode.LimeLightPipeline.makeLight;
-
 import com.pedropathing.follower.Follower;
 import com.pedropathing.localization.Pose;
 import com.pedropathing.pathgen.BezierCurve;
 import com.pedropathing.pathgen.BezierLine;
+import com.pedropathing.pathgen.BezierPoint;
 import com.pedropathing.pathgen.Path;
 import com.pedropathing.pathgen.PathChain;
 import com.pedropathing.pathgen.Point;
@@ -19,22 +16,19 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
 
 import org.firstinspires.ftc.teamcode.constants.AutoServoConstants;
-import org.firstinspires.ftc.teamcode.constants.TeleOpServoConstants;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.FConstants;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.LConstants;
 
 import java.util.List;
 import java.util.TimerTask;
-import org.firstinspires.ftc.teamcode.LimeLightPipeline;
 
-@Autonomous(name="Sharkbait Speciman Auto")
+@Autonomous(name="Samples Auto")
 
-public class SharkbaitSpecimanAuto extends OpMode {
+public class SharkbaitSampleAuto extends OpMode {
     private Follower follower;
     private Timer pathTimer, actionTimer, opmodeTimer;
 
@@ -229,6 +223,16 @@ public class SharkbaitSpecimanAuto extends OpMode {
         }
     }
 
+    class MoveInClawServoPosition extends TimerTask {
+        int i;
+        public MoveInClawServoPosition(int i) {
+            this.i = i;
+        }
+        public void run() {
+            InClawServo.setPosition(ICServoPositions[i]);
+        }
+    }
+
     class OpenIn extends TimerTask {
         public OpenIn(){}
         public void run(){ InClawServo.setPosition(ICServoPositions[0]); }
@@ -342,32 +346,23 @@ public class SharkbaitSpecimanAuto extends OpMode {
         }
     }
 
-    private final Pose startPose = new Pose(7, 55, Math.toRadians(0));  // Starting position
-    private final Pose scorePose1 = new Pose(36.5, 73, Math.toRadians(0)); // Scoring position 1
-    private final Pose scorePose2 = new Pose(36.8, 71, Math.toRadians(0)); // Scoring position 2
-    private final Pose scorePose3 = new Pose(37.2, 69, Math.toRadians(-5)); // Scoring position 3
-    private final Pose scorePose4 = new Pose(37.6, 67, Math.toRadians(-5)); // Scoring position 3
-    private final Pose scorePose5 = new Pose(38, 65, Math.toRadians(-5)); // Scoring position 3
+    private final Pose startPose = new Pose(7, 103, Math.toRadians(0));  // Starting position
+    private final Pose scorePose1 = new Pose(18, 121, Math.toRadians(-45)); // Scoring position 1
+    private final Pose scorePose2 = new Pose(18, 121, Math.toRadians(-45)); // Scoring position 2
+    private final Pose scorePose3 = new Pose(18, 121, Math.toRadians(-45)); // Scoring position 3
+    private final Pose scorePose4 = new Pose(18, 121, Math.toRadians(-45)); // Scoring position 3
+    private final Pose scorePose5 = new Pose(18, 121, Math.toRadians(-45)); // Scoring position 3
 
-    private final Pose pickupPreload2Pose = new Pose(11.9, 30, Math.toRadians(0)); // First sample pickup
-    private final Pose pickupHuman1Pose = new Pose(11.9, 30, Math.toRadians(-5));
-    private final Pose pickupHuman2Pose = new Pose(12.3, 30, Math.toRadians(-5));
-    private final Pose pickupHuman3Pose = new Pose(12.5, 30, Math.toRadians(-5));
+    private final Pose pickupSample1Pose = new Pose(18, 121, Math.toRadians(-15));
+    private final Pose pickupSample2Pose = new Pose(18, 121, Math.toRadians(10));
+    private final Pose pickupSample3Pose = new Pose(18, 121, Math.toRadians(25));
 
-    private final Pose beforeHuman1PoseControlPose = new Pose(12, 43, Math.toRadians(-55));
-    private final Pose beforeHuman1Pose = new Pose(41, 36, Math.toRadians(-55)); // First sample pickup
-    private final Pose beforeHuman2Pose = new Pose(41, 38, Math.toRadians(-55)); // Second sample pickup
-    private final Pose beforeHuman3Pose = new Pose(41, 33, Math.toRadians(-55)); // Third sample pickup
 
-    private final Pose human1Pose = new Pose(18, 42, Math.toRadians(-90)); // First sample pickup
-    private final Pose human2Pose = new Pose(18, 38, Math.toRadians(-90)); // Second sample pickup
-    private final Pose human3Pose = new Pose(18, 34, Math.toRadians(-90)); // Third sample pickup
-
-    private final Pose parkPose = new Pose(10, 22, Math.toRadians(0));    // Parking position
+    private final Pose parkPose = new Pose(61, 96, Math.toRadians(-90));    // Parking position
     private final Pose parkControlPose = new Pose(10, 22, Math.toRadians(-90)); // Control point for curved path
 
     private Path scorePreload, park;
-    private PathChain pickupPreload2, scorePreload2, beforeGiveHuman1Control, beforeGiveHuman1, giveHuman1, beforeGiveHuman2, giveHuman2, beforeGiveHuman3, giveHuman3, pickupHuman1, scoreHuman1, pickupHuman2, scoreHuman2, pickupHuman3, scoreHuman3;
+    private PathChain pickupSample1, scoreSample1, pickupSample2, scoreSample2, pickupSample3, scoreSample3;
     private PathChain doEverything;
     public void buildPaths() {
 //worth a shot        doEverything = follower.pathBuilder().addPath(new Path(new BezierLine(new Point(startPose), new Point(scorePose1)))).setLinearHeadingInterpolation(startPose.getHeading(), scorePose1.getHeading()).addPath(new BezierCurve(new Point(scorePose1), new Point(15,63, Point.CARTESIAN), new Point(37,30, Point.CARTESIAN), new Point(pickupPreload2Pose))).setLinearHeadingInterpolation(scorePose1.getHeading(), pickupPreload2Pose.getHeading()).build();
@@ -379,102 +374,59 @@ public class SharkbaitSpecimanAuto extends OpMode {
         scorePreload.setConstantInterpolation(startPose.getHeading()); */
 
         /* This is our grabPickup1 PathChain. We are using a single path with a BezierLine, which is a straight line. */
-        pickupPreload2 = follower.pathBuilder()
-                .addPath(new BezierCurve(new Point(scorePose1), new Point(15,63, Point.CARTESIAN), new Point(37,30, Point.CARTESIAN), new Point(pickupPreload2Pose)))
-                .setLinearHeadingInterpolation(scorePose1.getHeading(), pickupPreload2Pose.getHeading())
+        pickupSample1 = follower.pathBuilder()
+                .addPath(new BezierLine(new Point(scorePose1), new Point(pickupSample1Pose)))
+                .setLinearHeadingInterpolation(scorePose1.getHeading(), pickupSample1Pose.getHeading())
                 .build();
 
         /* This is our scorePickup1 PathChain. We are using a single path with a BezierLine, which is a straight line. */
-        scorePreload2 = follower.pathBuilder()
-                .addPath(new BezierCurve(new Point(pickupPreload2Pose), new Point(37, 30, Point.CARTESIAN), new Point(15, 63, Point.CARTESIAN), new Point(scorePose2)))
-                .setLinearHeadingInterpolation(pickupPreload2Pose.getHeading(), scorePose2.getHeading())
+        scoreSample1 = follower.pathBuilder()
+                .addPath(new BezierLine(new Point(pickupSample1Pose), new Point(scorePose2)))
+                .setLinearHeadingInterpolation(pickupSample1Pose.getHeading(), scorePose2.getHeading())
                 .build();
-
         /* This is our grabPickup2 PathChain. We are using a single path with a BezierLine, which is a straight line. */
-        beforeGiveHuman1 = follower.pathBuilder()
-                .addPath(new BezierCurve(new Point(scorePose2),
-                        new Point(11.000, 9.000, Point.CARTESIAN),
-                        new Point(62.000, 48.000, Point.CARTESIAN),
-                        new Point(58.000, 25.000, Point.CARTESIAN)))
-                .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
+        pickupSample2 = follower.pathBuilder()
+                .addPath(new BezierLine(new Point(scorePose2), new Point(pickupSample2Pose)))
+                .setLinearHeadingInterpolation(scorePose2.getHeading(), pickupSample2Pose.getHeading())
                 .build();
+        follower.holdPoint(new Point(scorePose1), scorePose1.getHeading());
 
         /* This is our scorePickup2 PathChain. We are using a single path with a BezierLine, which is a straight line. */
-        giveHuman1 = follower.pathBuilder()
-                .addPath(new BezierLine(new Point(58.000, 25.000, Point.CARTESIAN),
-                        new Point(16.000, 25.000, Point.CARTESIAN)))
-                .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
+        scoreSample2 = follower.pathBuilder()
+                .addPath(new BezierLine(new Point(pickupSample2Pose), new Point(scorePose3)))
+                .setLinearHeadingInterpolation(pickupSample2Pose.getHeading(), scorePose3.getHeading())
                 .build();
 
-        beforeGiveHuman2 = follower.pathBuilder()
-                .addPath(new BezierCurve(new Point(16.000, 25.000, Point.CARTESIAN),
-                        new Point(77.000, 29.000, Point.CARTESIAN),
-                        new Point(71.000, 6.000, Point.CARTESIAN),
-                        new Point(16.000, 12.000, Point.CARTESIAN)))
-                .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
+        pickupSample3 = follower.pathBuilder()
+                .addPath(new BezierLine(new Point(scorePose3), new Point(pickupSample3Pose)))
+                .setLinearHeadingInterpolation(scorePose3.getHeading(), pickupSample3Pose.getHeading())
                 .build();
 
-
-        beforeGiveHuman3 = follower.pathBuilder()
-                .addPath(new BezierCurve(new Point(16.000, 12.000, Point.CARTESIAN),
-                        new Point(71.000, 18.000, Point.CARTESIAN),
-                        new Point(52.000, 7.000, Point.CARTESIAN)))
-                .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
-                .build();
-
-        giveHuman3 = follower.pathBuilder()
-                .addPath(new BezierLine(new Point(52.000, 7.000, Point.CARTESIAN),
-                        new Point(11.300, 7.500, Point.CARTESIAN)))
-                .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
-                .build();
-
-        scoreHuman1 = follower.pathBuilder()
-                .addPath(new BezierCurve(new Point(pickupHuman1Pose), new Point(37, 30, Point.CARTESIAN), new Point(15, 63, Point.CARTESIAN), new Point(scorePose3)))
-                .setLinearHeadingInterpolation(pickupHuman1Pose.getHeading(), scorePose3.getHeading())
-                .build();
-
-        pickupHuman2 = follower.pathBuilder()
-                .addPath(new BezierCurve(new Point(scorePose3), new Point(15,63, Point.CARTESIAN), new Point(37,30, Point.CARTESIAN), new Point(pickupHuman2Pose)))
-                .setLinearHeadingInterpolation(scorePose3.getHeading(), pickupHuman2Pose.getHeading())
-                .build();
-
-        scoreHuman2 = follower.pathBuilder()
-                .addPath(new BezierCurve(new Point(pickupHuman2Pose), new Point(37, 30, Point.CARTESIAN), new Point(15, 63, Point.CARTESIAN), new Point(scorePose4)))
-                .setLinearHeadingInterpolation(pickupHuman2Pose.getHeading(), scorePose4.getHeading())
-                .build();
-
-        pickupHuman3 = follower.pathBuilder()
-                .addPath(new BezierCurve(new Point(scorePose4), new Point(15,63, Point.CARTESIAN), new Point(37,30, Point.CARTESIAN), new Point(pickupHuman3Pose)))
-                .setLinearHeadingInterpolation(scorePose4.getHeading(), pickupHuman3Pose.getHeading())
-                .build();
-
-        scoreHuman3 = follower.pathBuilder()
-                .addPath(new BezierCurve(new Point(pickupHuman3Pose), new Point(37, 30, Point.CARTESIAN), new Point(15, 63, Point.CARTESIAN), new Point(scorePose5)))
-                .setLinearHeadingInterpolation(pickupHuman3Pose.getHeading(), scorePose5.getHeading())
+        scoreSample3 = follower.pathBuilder()
+                .addPath(new BezierLine(new Point(pickupSample3Pose), new Point(scorePose4)))
+                .setLinearHeadingInterpolation(pickupSample3Pose.getHeading(), scorePose4.getHeading())
                 .build();
 
         /* This is our park path. We are using a BezierCurve with 3 points, which is a curved line that is curved based off of the control point */
-        park = new Path(new BezierLine(new Point(pickupHuman3Pose), /* Control Point */ new Point(parkPose)));
-        park.setLinearHeadingInterpolation(scorePose5.getHeading(), parkPose.getHeading());
+        park = new Path(new BezierCurve(new Point(scorePose4),
+                new Point(61, 128, Point.CARTESIAN),
+                /* Control Point */ new Point(parkPose)));
+        park.setLinearHeadingInterpolation(scorePose4.getHeading(), parkPose.getHeading());
     }
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                timer.schedule(new OpenIn(), 0 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveInDiffyServoPosition(1), 4 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveInElbowServosPosition(1), 0 *DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveOtCoaxialServoPosition(2), 0 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveOtElbowServosPosition(2), 2 *DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveOtLinkageServoPosition(1), 4 *DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveOtWristServoPosition(1), 4 *DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveOtCoaxialServoPosition(1), 6 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveOtElbowServosPosition(1), 8 *DELAY_BETWEEN_MOVES);
-                follower.followPath(scorePreload);
+                follower.followPath(scorePreload, true);
+//                follower.holdPoint(new Point(scorePose1), pickupSample1Pose.getHeading());
+//                follower.holdPoint(new Point(pickupSample1Pose), scorePose1.getHeading());
+//                follower.holdPoint(new Point(scorePose1), pickupSample2Pose.getHeading());
+//                follower.holdPoint(new Point(pickupSample2Pose), scorePose3.getHeading());
+//                follower.holdPoint(new Point(scorePose3), pickupSample3Pose.getHeading());
+//                follower.holdPoint(new Point(pickupSample3Pose), scorePose4.getHeading());
 //                follower.followPath(doEverything, true);
                 setPathState(1);
                 break;
             case 1:
-
                 /* You could check for
                 - Follower State: "if(!follower.isBusy() {}"
                 - Time: "if(pathTimer.getElapsedTimeSeconds() > 1) {}"
@@ -484,15 +436,11 @@ public class SharkbaitSpecimanAuto extends OpMode {
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
                     /* Score Preload */
-                    timer.schedule(new MoveOtClawServoPosition(0), 0 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtLinkageServoPosition(0), 2 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtCoaxialServoPosition(2), 6 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtWristServoPosition(0), 8 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtElbowServosPosition(2), 6 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtCoaxialServoPosition(0), 8 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtElbowServosPosition(0), 10 * DELAY_BETWEEN_MOVES);
-                    /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
-                    follower.followPath(pickupPreload2,true);
+                    /* Since this is a pathChain, we can have Pedro hold the end
+                     point while we are grabbing the sample */
+                    follower.holdPoint(new Point(pickupSample1Pose), pickupSample1Pose.getHeading());
+
+//                    follower.followPath(pickupSample1);
                     setPathState(2);
                 }
                 break;
@@ -500,48 +448,26 @@ public class SharkbaitSpecimanAuto extends OpMode {
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup1Pose's position */
                 if(!follower.isBusy()) {
                     /* Grab Sample */
-                    timer.schedule(new MoveOtClawServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveInDiffyServoPosition(1), 4 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveInElbowServosPosition(1), 1 *DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtCoaxialServoPosition(2), 1 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtElbowServosPosition(2), 3 *DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtLinkageServoPosition(1), 5 *DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtWristServoPosition(1), 5 *DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtCoaxialServoPosition(1), 7 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtElbowServosPosition(1), 9 *DELAY_BETWEEN_MOVES);
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(scorePreload2,true);
+                    follower.followPath(scoreSample1);
                     setPathState(3);
                 }
                 break;
             case 3:
-                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
+                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup2Pose's position */
                 if(!follower.isBusy()) {
-                    /* Score Sample */
-                    timer.schedule(new MoveOtClawServoPosition(0), 0 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtLinkageServoPosition(0), 2 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtCoaxialServoPosition(2), 6 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtWristServoPosition(0), 8 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtElbowServosPosition(2), 6 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtCoaxialServoPosition(0), 8 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtElbowServosPosition(0), 10 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveInDiffyServoPosition(3), 9 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveInElbowServosPosition(3), 6 *DELAY_BETWEEN_MOVES);
-                    /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
-                    follower.followPath(beforeGiveHuman1,false);
+                    /* Grab Sample */
+                    /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
+                    follower.followPath(pickupSample2);
                     setPathState(4);
                 }
                 break;
             case 4:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup2Pose's position */
-                if(!follower.isBusy()/* && follower.getPose() == beforeHuman1Pose*/) {
+                if(!follower.isBusy()) {
                     /* Grab Sample */
-
-                    /*timer.schedule(new MoveInElbowServosPosition(0), 3 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new CloseIn(), 6 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new Align(), 0 * DELAY_BETWEEN_MOVES);*/
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(giveHuman1,false);
+                    follower.followPath(scoreSample2);
                     setPathState(5);
                 }
                 break;
@@ -550,7 +476,7 @@ public class SharkbaitSpecimanAuto extends OpMode {
                 if(!follower.isBusy()) {
                     /* Score Sample */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
-                    follower.followPath(beforeGiveHuman2,false);
+                    follower.followPath(pickupSample3);
                     setPathState(6);
                 }
                 break;
@@ -559,8 +485,8 @@ public class SharkbaitSpecimanAuto extends OpMode {
                 if(!follower.isBusy()) {
                     /* Grab Sample */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(beforeGiveHuman3, false);
-                    setPathState(7);
+                    follower.followPath(scoreSample3);
+                    setPathState(15);
                 }
                 break;
             case 7:
@@ -568,7 +494,7 @@ public class SharkbaitSpecimanAuto extends OpMode {
                 if(!follower.isBusy()) {
                     /* Grab Sample */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(giveHuman3, false);
+//                    follower.followPath(beforeGiveHuman3, true);
                     setPathState(8);
                 }
                 break;
@@ -576,17 +502,8 @@ public class SharkbaitSpecimanAuto extends OpMode {
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup3Pose's position */
                 if(!follower.isBusy()) {
                     /* Grab Sample */
-                    timer.schedule(new MoveOtClawServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveInDiffyServoPosition(1), 4 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveInElbowServosPosition(1), 1 *DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtCoaxialServoPosition(2), 1 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtElbowServosPosition(2), 3 *DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtLinkageServoPosition(1), 5 *DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtWristServoPosition(1), 5 *DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtCoaxialServoPosition(1), 7 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtElbowServosPosition(1), 9 *DELAY_BETWEEN_MOVES);
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(scoreHuman1, true);
+//                    follower.followPath(giveHuman3, false);
                     setPathState(9);
                 }
                 break;
@@ -594,15 +511,8 @@ public class SharkbaitSpecimanAuto extends OpMode {
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup3Pose's position */
                 if(!follower.isBusy()) {
                     /* Grab Sample */
-                    timer.schedule(new MoveOtClawServoPosition(0), 0 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtLinkageServoPosition(0), 2 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtCoaxialServoPosition(2), 6 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtWristServoPosition(0), 8 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtElbowServosPosition(2), 6 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtCoaxialServoPosition(0), 8 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtElbowServosPosition(0), 10 * DELAY_BETWEEN_MOVES);
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(pickupHuman2, true);
+//                    follower.followPath(pickupHuman1, false);
                     setPathState(10);
                 }
                 break;
@@ -610,17 +520,8 @@ public class SharkbaitSpecimanAuto extends OpMode {
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup3Pose's position */
                 if(!follower.isBusy()) {
                     /* Grab Sample */
-                    timer.schedule(new MoveOtClawServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveInDiffyServoPosition(1), 4 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveInElbowServosPosition(1), 1 *DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtCoaxialServoPosition(2), 1 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtElbowServosPosition(2), 3 *DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtLinkageServoPosition(1), 5 *DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtWristServoPosition(1), 5 *DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtCoaxialServoPosition(1), 7 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveOtElbowServosPosition(1), 9 *DELAY_BETWEEN_MOVES);
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(scoreHuman2, true);
+//                    follower.followPath(scoreHuman1, false);
                     setPathState(11);
                 }
                 break;
@@ -628,36 +529,48 @@ public class SharkbaitSpecimanAuto extends OpMode {
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup3Pose's position */
                 if(!follower.isBusy()) {
                     /* Grab Sample */
-                    timer.schedule(new MoveOtClawServoPosition(0), 0 * DELAY_BETWEEN_MOVES);
-//                    timer.schedule(new MoveOtCoaxialServoPosition(5), 0 *DELAY_BETWEEN_MOVES);
-//                    timer.schedule(new MoveOtElbowServosPosition(5), 0 *DELAY_BETWEEN_MOVES);
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(pickupHuman3, true);
-                    setPathState(14);
+//                    follower.followPath(pickupHuman2, false);
+                    setPathState(12);
                 }
                 break;
             case 12:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup3Pose's position */
                 if(!follower.isBusy()) {
                     /* Grab Sample */
-
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(scoreHuman3, true);
+//                    follower.followPath(scoreHuman2, false);
                     setPathState(13);
                 }
                 break;
-
             case 13:
-                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
+                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup3Pose's position */
                 if(!follower.isBusy()) {
-                    /* Score Sample */
-
-                    /* Since this is a pathChain, we can have Pedro hold the end point while we are parked */
-                    //  follower.followPath(park,true);
+                    /* Grab Sample */
+                    /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
+//                    follower.followPath(pickupHuman3, false);
                     setPathState(14);
                 }
                 break;
             case 14:
+                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup3Pose's position */
+                if(!follower.isBusy()) {
+                    /* Grab Sample */
+                    /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
+//                    follower.followPath(scoreHuman3, false);
+                    setPathState(15);
+                }
+                break;
+            case 15:
+                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
+                if(!follower.isBusy()) {
+                    /* Score Sample */
+                    /* Since this is a pathChain, we can have Pedro hold the end point while we are parked */
+                    follower.followPath(park,true);
+                    setPathState(16);
+                }
+                break;
+            case 16:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
                     /* Level 1 Ascent */
@@ -792,7 +705,7 @@ public class SharkbaitSpecimanAuto extends OpMode {
         BRMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         InSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        makeLight(hardwareMap, "litty");
+        LimeLightPipeline.makeLight(hardwareMap, "litty");
         litty = hardwareMap.get(Limelight3A.class, "litty");
         litty.setPollRateHz(100); // This sets how often we ask Limelight for data (100 times per second)
         telemetry.setMsTransmissionInterval(11);
@@ -806,7 +719,7 @@ public class SharkbaitSpecimanAuto extends OpMode {
 
         InLDiffyServo.setPosition(LDServoPositions[3]);//3 no auto
         InRDiffyServo.setPosition(RDServoPositions[3]);//3 no auto
-        InClawServo.setPosition(ICServoPositions[0]);
+        InClawServo.setPosition(ICServoPositions[1]);
         OtClawServo.setPosition(OCServoPositions[1]);
         OtWristServo.setPosition(OWServoPositions[0]);
         OtLinkageLServo.setPosition(OKLServoPositions[0]);

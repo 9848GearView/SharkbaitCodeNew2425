@@ -40,6 +40,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.sun.tools.javac.util.GraphUtils;
 
 
 import org.firstinspires.ftc.teamcode.constants.TeleOpServoConstants;
@@ -114,8 +115,8 @@ public class JudgingTeleOp extends LinearOpMode {
     private boolean inClawDelay = false;
     private boolean otClawDelay = false;
     private boolean diffyRotateDelay = false;
-    private boolean inClawOpened = true;
-    private boolean otClawOpened = true;
+    private boolean inClawOpened = false;
+    private boolean otClawOpened = false;
 
 
     private boolean oldCrossPressed = true;
@@ -176,7 +177,8 @@ public class JudgingTeleOp extends LinearOpMode {
     private double[] SlowModeSpeed = TeleOpServoConstants.SlowModeSpeed;
 
 
-    private int inPosition = 3;
+    private int inPosition = 4;
+    private boolean transferReady = false;
 
 
 
@@ -229,11 +231,11 @@ public class JudgingTeleOp extends LinearOpMode {
         }
         class OpenIn extends TimerTask {
             public OpenIn(){}
-            public void run(){ InClawServo.setPosition(ICServoPositions[1]); }
+            public void run(){ InClawServo.setPosition(ICServoPositions[1]); inClawOpened = true; }
         }
         class CloseIn extends TimerTask {
             public CloseIn(){}
-            public void run(){ InClawServo.setPosition(ICServoPositions[0]); }
+            public void run(){ InClawServo.setPosition(ICServoPositions[0]); inClawOpened = false; }
         }
 
 
@@ -319,6 +321,22 @@ public class JudgingTeleOp extends LinearOpMode {
                 InSlide.setTargetPosition(InSlidePositions[i]);
                 InSlide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 InSlide.setPower(power);
+                InSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            }
+        }
+        class IntakeExtension extends TimerTask {
+            int i;
+            double power;
+
+            public IntakeExtension(int i, double power) {
+                this.i = i;
+                this.power = power;
+            }
+            public void run() {
+                InSlide.setTargetPosition(i);
+                InSlide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                InSlide.setPower(power);
+                InSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             }
         }
 
@@ -507,11 +525,11 @@ public class JudgingTeleOp extends LinearOpMode {
         FLMotor.setDirection(DcMotor.Direction.REVERSE);
         FRMotor.setDirection(DcMotor.Direction.FORWARD);
         BLMotor.setDirection(DcMotor.Direction.REVERSE);
-        BRMotor.setDirection(DcMotor.Direction.REVERSE);
+        BRMotor.setDirection(DcMotor.Direction.FORWARD);
 
 
-        InSlide.setDirection(DcMotor.Direction.REVERSE); //We need to reverse this
-        OtSlideF.setDirection(DcMotor.Direction.REVERSE);
+        InSlide.setDirection(DcMotor.Direction.FORWARD);
+        OtSlideF.setDirection(DcMotor.Direction.REVERSE); // all 3 of these are backwards
         OtSlideM.setDirection(DcMotor.Direction.FORWARD);
         OtSlideB.setDirection(DcMotor.Direction.REVERSE);
 
@@ -618,15 +636,15 @@ public class JudgingTeleOp extends LinearOpMode {
             double BLPower = r * Math.sin(robotAngle) + rightX;
             double BRPower = r * Math.cos(robotAngle) - rightX;
 
-//            double divider = Math.abs(Math.max(FLPower, FRPower));
-//            divider = Math.abs(Math.max(divider, BLPower));
-//            divider = Math.abs(Math.max(divider, BRPower));
-//            if(gamepad2.right_stick_x < 0.1 && divider != 1){
-//                FLPower = FLPower / divider;
-//                FRPower = FRPower / divider;
-//                BLPower = BLPower / divider;
-//                BRPower = BRPower / divider;
-//            }
+            double divider = Math.abs(Math.max(FLPower, FRPower));
+            divider = Math.abs(Math.max(divider, BLPower));
+            divider = Math.abs(Math.max(divider, BRPower));
+            if(gamepad2.right_stick_x < 0.1 && divider != 1 && r >= 0.9){
+                FLPower = FLPower / divider;
+                FRPower = FRPower / divider;
+                BLPower = BLPower / divider;
+                BRPower = BRPower / divider;
+            }
 
 
             // Send calculated power to wheels
@@ -709,8 +727,8 @@ public class JudgingTeleOp extends LinearOpMode {
 
             if (leftBumper && intakeManualMode && !inClawDelay && !oldLeftBumper) { //close Intake claw
                 new setInClawDelay(true).run();
-                if (inClawOpened) { InClawServo.setPosition(ICServoPositions[1]); } //open Intake Claw
-                else { InClawServo.setPosition(ICServoPositions[0]); }//close Intake Claw
+                if (inClawOpened) { InClawServo.setPosition(ICServoPositions[1]); } //close Intake Claw
+                else { InClawServo.setPosition(ICServoPositions[0]); }//open Intake Claw
                 timer.schedule(new setInClawDelay(false), 3 * DELAY_BETWEEN_MOVES);
                 inClawOpened = !inClawOpened;
             }
@@ -745,30 +763,50 @@ public class JudgingTeleOp extends LinearOpMode {
                 OtSlideM.setPower(gamepad2.right_stick_y);
                 OtSlideB.setPower(gamepad2.right_stick_y);
             }
-            if (crossPressed && !oldCrossPressed && !isOtArmMoving) { //pickup sample from intake outtakeIndex = 3
+            if (crossPressed && !oldCrossPressed && !isOtArmMoving && inPosition == 3) { //pickup sample from intake outtakeIndex = 3
+                new setIsInArmMoving(true).run();
+                new setIsInDiffyMoving(true).run();
                 new setIsOtArmMoving(true).run();
                 new setIsOtCoaxialMoving(true).run();
                 new setOtClawDelay(true).run();
+
+                timer.schedule(new OtSlidesPosition(0, 0, 0, 1), 0 * DELAY_BETWEEN_MOVES);
+
                 timer.schedule(new MoveOtClawServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveOtLinkageServoPosition(2), 0 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtLinkageServoPosition(0), 0 * DELAY_BETWEEN_MOVES);
                 timer.schedule(new MoveOtCoaxialServoPosition(4), 4 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveOtElbowServosPosition(3), 8 * DELAY_BETWEEN_MOVES);
-                if (!inClawOpened) timer.schedule(new MoveOtWristServoPosition(0), 6 *DELAY_BETWEEN_MOVES);
-                else timer.schedule(new MoveOtWristServoPosition(1), 6 *DELAY_BETWEEN_MOVES);
-                if (otClawOpened) timer.schedule(new MoveOtClawServoPosition(0), 6 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtClawServoPosition(0), 6 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtElbowServosPosition(3), 9 * DELAY_BETWEEN_MOVES);
+//                if (!inClawOpened) timer.schedule(new MoveOtWristServoPosition(2), 5 *DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtWristServoPosition(1), 5 *DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtClawServoPosition(1), 15 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new OpenIn(), 15 * DELAY_BETWEEN_MOVES);
 
+                timer.schedule(new MoveInDiffyServoPosition(2), 20 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInElbowServosPosition(2), 20 * DELAY_BETWEEN_MOVES);
 
-                timer.schedule(new setIsOtArmMoving(false), 10 *DELAY_BETWEEN_MOVES);
-                timer.schedule(new setIsOtCoaxialMoving(false), 10 *DELAY_BETWEEN_MOVES);
-                timer.schedule(new setOtClawDelay(false), 10 *DELAY_BETWEEN_MOVES);
+//                timer.schedule(new MoveOtLinkageServoPosition(0), 18 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtCoaxialServoPosition(2), 20 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtWristServoPosition(0), 20 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtElbowServosPosition(2), 20 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtCoaxialServoPosition(0), 20 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtElbowServosPosition(0), 24 * DELAY_BETWEEN_MOVES);
 
+                timer.schedule(new setIsInArmMoving(false), 30 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new setIsInDiffyMoving(false), 30 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new setIsOtArmMoving(false), 30 *DELAY_BETWEEN_MOVES);
+                timer.schedule(new setIsOtCoaxialMoving(false), 30 *DELAY_BETWEEN_MOVES);
+                timer.schedule(new setOtClawDelay(false), 30 * DELAY_BETWEEN_MOVES);
+
+                otClawOpened = false;
+                inPosition = 2;
 
             }else if (circlePressed && !oldCirclePressed && !isOtArmMoving && outtakeIndex != 0) { //pickup specimen from wall outtakeIndex = 0
                 new setIsOtArmMoving(true).run();
                 new setOuttakeManualMode(false).run();
                 new setIsOtCoaxialMoving(true).run();
                 new setOtClawDelay(true).run();
-//                timer.schedule(new OtSlidesPosition(0,0,0,1), 0*DELAY_BETWEEN_MOVES);
+                timer.schedule(new OtSlidesPosition(0,0,0,1), 0*DELAY_BETWEEN_MOVES);
                 if (outtakeIndex == 2) {
                     timer.schedule(new MoveOtClawServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
                     timer.schedule(new MoveOtLinkageServoPosition(0), 0 * DELAY_BETWEEN_MOVES);
@@ -828,17 +866,15 @@ public class JudgingTeleOp extends LinearOpMode {
                 new setIsOtCoaxialMoving(true).run();
                 new setOtClawDelay(true).run();
 
-                if (inPosition == 3 || inPosition == 2) {
+                if (inPosition == 3 || inPosition == 4) {
                     new setIsInArmMoving(true).run();
                     new setIsInDiffyMoving(true).run();
-                    LDServoPositions[1] = 0.5;
-                    RDServoPositions[1] = 0.5;
-                    timer.schedule(new MoveInDiffyServoPosition(1), 4 * DELAY_BETWEEN_MOVES);
-                    timer.schedule(new MoveInElbowServosPosition(1), 0 *DELAY_BETWEEN_MOVES);
+                    timer.schedule(new MoveInDiffyServoPosition(2), 4 * DELAY_BETWEEN_MOVES);
+                    timer.schedule(new MoveInElbowServosPosition(2), 0 *DELAY_BETWEEN_MOVES);
 
                     timer.schedule(new setIsInArmMoving(false), 4 *DELAY_BETWEEN_MOVES);
                     timer.schedule(new setIsInDiffyMoving(false), 4 *DELAY_BETWEEN_MOVES);
-                    inPosition = 1;
+                    inPosition = 2;
                 }
                 timer.schedule(new MoveOtClawServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
                 timer.schedule(new MoveOtCoaxialServoPosition(2), 0 * DELAY_BETWEEN_MOVES);
@@ -857,30 +893,32 @@ public class JudgingTeleOp extends LinearOpMode {
 
 
             }
-
-            if(gamepad2.left_stick_y < 0 && Math.abs(InSlide.getCurrentPosition()) < 1200){
+            if(-gamepad2.left_stick_y <= 0){
                 if(babyMode){
-                    InSlide.setPower(gamepad2.left_stick_y * 0.4);
+                    InSlide.setPower(-gamepad2.left_stick_y * 0.65);
                 }else{
-                    InSlide.setPower(gamepad2.left_stick_y);
+                    InSlide.setPower(-gamepad2.left_stick_y);
                 }
-            }else if(gamepad2.right_stick_y >= 0){
+            }else if(-gamepad2.left_stick_y > 0 && Math.abs(InSlide.getCurrentPosition()) < 1200){
                 if(babyMode){
-                    InSlide.setPower(gamepad2.left_stick_y * 0.4);
+                    InSlide.setPower(-gamepad2.left_stick_y * 0.65);
                 }else{
-                    InSlide.setPower(gamepad2.left_stick_y);
+                    InSlide.setPower(-gamepad2.left_stick_y);
                 }
             } else {
-                InSlide.setPower(0
-                );
+                InSlide.setPower(0);
             }
 
 
-            if (dpadDownPressed && !oldDownDpadPressed && !isInArmMoving) { //intake position intakeIndex = 0
+            if (dpadDownPressed && !oldDownDpadPressed && intakeIndex != 3 && !isInArmMoving) { //intake position intakeIndex = 0
                 new setIsInArmMoving(true).run();
-                //new setIsInDiffyMoving(true).run();
-                //timer.schedule(new MoveInDiffyServoPosition(0), 0 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveInElbowServosPosition(0), 0 *DELAY_BETWEEN_MOVES);
+                if(inPosition == 3 || inPosition == 4){
+                    timer.schedule(new MoveInDiffyServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
+                    timer.schedule(new MoveInElbowServosPosition(2), 0 * DELAY_BETWEEN_MOVES);
+                    timer.schedule(new MoveInElbowServosPosition(0), 1 * DELAY_BETWEEN_MOVES);
+                }else{
+                    timer.schedule(new MoveInElbowServosPosition(0), 0 *DELAY_BETWEEN_MOVES);
+                }
                 timer.schedule(new setIsInArmMoving(false), 2 *DELAY_BETWEEN_MOVES);
                 //timer.schedule(new setIsInDiffyMoving(false), 4 *DELAY_BETWEEN_MOVES);
                 inPosition = 0;
@@ -901,48 +939,29 @@ public class JudgingTeleOp extends LinearOpMode {
                 new setIsInDiffyMoving(true).run();
                 LDServoPositions[1] = 0.5;
                 RDServoPositions[1] = 0.5;
-                timer.schedule(new MoveInDiffyServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveInElbowServosPosition(1), 0 *DELAY_BETWEEN_MOVES);
+                if(inPosition != 1 && inPosition != 0){
+                    timer.schedule(new MoveInElbowServosPosition(5), 0 * DELAY_BETWEEN_MOVES);
+                }
+                timer.schedule(new MoveInDiffyServoPosition(1), 2 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInElbowServosPosition(1), 1 *DELAY_BETWEEN_MOVES);
 
 
                 timer.schedule(new setIsInArmMoving(false), 4 *DELAY_BETWEEN_MOVES);
                 timer.schedule(new setIsInDiffyMoving(false), 4 *DELAY_BETWEEN_MOVES);
                 inPosition = 1;
-            } else if (dpadUpPressed && !oldUpDpadPressed && !isInArmMoving) { //position for transferring sample to outtake intakeIndex = 3
+            } else if (dpadUpPressed && !oldUpDpadPressed && !isInArmMoving && inPosition != 3) { //position for transferring sample to outtake intakeIndex = 3
                 new setIsInArmMoving(true).run();
                 new setIsInDiffyMoving(true).run();
-                timer.schedule(new MoveInDiffyServoPosition(4), 0 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveInElbowServosPosition(4), 2 *DELAY_BETWEEN_MOVES);
 
-                timer.schedule(new setIsInArmMoving(false), 5 *DELAY_BETWEEN_MOVES);
-                timer.schedule(new setIsInDiffyMoving(false), 5 *DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInDiffyServoPosition(4), 0 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInElbowServosPosition(4), 2 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new IntakeExtension(0, 1), 0 * DELAY_BETWEEN_MOVES);
+
+                timer.schedule(new setIsInArmMoving(false), 5 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new setIsInDiffyMoving(false), 5 * DELAY_BETWEEN_MOVES);
+
                 inPosition = 3;
 
-
-//                new setIsOtArmMoving(true).run();
-//                new setIsOtCoaxialMoving(true).run();
-//                new setOtClawDelay(true).run();
-//                timer.schedule(new MoveOtClawServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
-//                timer.schedule(new MoveOtLinkageServoPosition(2), 5 * DELAY_BETWEEN_MOVES);
-//                timer.schedule(new MoveOtCoaxialServoPosition(4), 9 * DELAY_BETWEEN_MOVES);
-//                timer.schedule(new MoveOtClawServoPosition(0), 18 * DELAY_BETWEEN_MOVES);
-//                timer.schedule(new MoveOtElbowServosPosition(3), 14 * DELAY_BETWEEN_MOVES);
-//                if (!inClawOpened) timer.schedule(new MoveOtWristServoPosition(2), 10 *DELAY_BETWEEN_MOVES);
-//                else timer.schedule(new MoveOtWristServoPosition(1), 10 *DELAY_BETWEEN_MOVES);
-//                timer.schedule(new MoveOtClawServoPosition(1), 22 * DELAY_BETWEEN_MOVES);
-//                timer.schedule(new OpenIn(), 22 * DELAY_BETWEEN_MOVES);
-//
-//
-//                timer.schedule(new MoveOtLinkageServoPosition(0), 25 * DELAY_BETWEEN_MOVES);
-//                timer.schedule(new MoveOtCoaxialServoPosition(2), 29 * DELAY_BETWEEN_MOVES);
-//                timer.schedule(new MoveOtWristServoPosition(0), 29 * DELAY_BETWEEN_MOVES);
-//                timer.schedule(new MoveOtElbowServosPosition(2), 29 * DELAY_BETWEEN_MOVES);
-//                timer.schedule(new MoveOtCoaxialServoPosition(0), 30 * DELAY_BETWEEN_MOVES);
-//                timer.schedule(new MoveOtElbowServosPosition(0), 32 * DELAY_BETWEEN_MOVES);
-//
-//                timer.schedule(new setIsOtArmMoving(false), 30 *DELAY_BETWEEN_MOVES);
-//                timer.schedule(new setIsOtCoaxialMoving(false), 30 *DELAY_BETWEEN_MOVES);
-//                timer.schedule(new setOtClawDelay(false), 30 *DELAY_BETWEEN_MOVES);
 
             }
 
@@ -1039,6 +1058,11 @@ public class JudgingTeleOp extends LinearOpMode {
                         } else if (Angleish < -90) {
                             Angleish = 180 + Angleish;
                         }
+                        if(Angleish <= 0){
+                            Angleish += 90;
+                        }else if(Angleish > 0){
+                            Angleish -= 90;
+                        }
                         telemetry.addData("Angle:", Angleish);
                         degrees = colorResult.getTargetYDegrees();
 
@@ -1081,17 +1105,20 @@ public class JudgingTeleOp extends LinearOpMode {
 
                         }
                         //none of this works
-                      /* new setIsInArmMoving(true);
-                       timer.schedule(new IntakeExtension((int) ((colorResult.getTargetYDegrees()+2) * 10)), 0)*/
-                        timer.schedule(new MoveInElbowServosPosition(0), 8 * DELAY_BETWEEN_MOVES);
+                        degrees = ((colorResult.getTargetYDegrees() + 5) * 10);
+                        if(InSlide.getCurrentPosition() >= (int) -degrees && Math.abs(InSlide.getCurrentPosition()) + degrees <= 1200){
+                            new setIsInArmMoving(true);
+                            timer.schedule(new IntakeExtension(InSlide.getCurrentPosition() + ((int) degrees), 1), 0 * DELAY_BETWEEN_MOVES);
+                        }
+                        timer.schedule(new MoveInElbowServosPosition(0), 4 * DELAY_BETWEEN_MOVES);
                         new setInClawDelay(true);
-                        timer.schedule(new CloseIn(), 0);
-                        timer.schedule(new OpenIn(), 12 * DELAY_BETWEEN_MOVES);
-                        timer.schedule(new MoveInDiffyServoPosition(2), 16 * DELAY_BETWEEN_MOVES);
-                        timer.schedule(new MoveInElbowServosPosition(2), 16 * DELAY_BETWEEN_MOVES);
-                        timer.schedule(new setInClawDelay(false), 18 * DELAY_BETWEEN_MOVES);
-                        timer.schedule(new setIsInArmMoving(false), 18 * DELAY_BETWEEN_MOVES);
-                        timer.schedule(new setIsInDiffyMoving(false), 18 * DELAY_BETWEEN_MOVES);
+                        timer.schedule(new OpenIn(), 0);
+                        timer.schedule(new CloseIn(), 8 * DELAY_BETWEEN_MOVES);
+                        timer.schedule(new MoveInDiffyServoPosition(2), 12 * DELAY_BETWEEN_MOVES);
+                        timer.schedule(new MoveInElbowServosPosition(2), 12 * DELAY_BETWEEN_MOVES);
+                        timer.schedule(new setInClawDelay(false), 10 * DELAY_BETWEEN_MOVES);
+                        timer.schedule(new setIsInArmMoving(false), 14 * DELAY_BETWEEN_MOVES);
+                        timer.schedule(new setIsInDiffyMoving(false), 14 * DELAY_BETWEEN_MOVES);
                         inPosition = 2;
                     }
                 }
