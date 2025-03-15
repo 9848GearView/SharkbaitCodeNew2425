@@ -44,6 +44,7 @@ import com.sun.tools.javac.util.GraphUtils;
 
 
 import org.firstinspires.ftc.teamcode.constants.TeleOpServoConstants;
+import org.firstinspires.ftc.teamcode.LimeLightPipeline;
 
 
 import java.lang.Math;
@@ -175,7 +176,8 @@ public class JudgingTeleOp extends LinearOpMode {
 
 
     private double[] SlowModeSpeed = TeleOpServoConstants.SlowModeSpeed;
-
+    private double speedfor = SlowModeSpeed[1];
+    private double speedbac = SlowModeSpeed[0];
 
     private int inPosition = 4;
     private boolean transferReady = false;
@@ -587,6 +589,7 @@ public class JudgingTeleOp extends LinearOpMode {
         BRMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
 
+        LimeLightPipeline.makeLight(hardwareMap, "litty");
         litty = hardwareMap.get(Limelight3A.class, "litty");
         litty.setPollRateHz(100); // This sets how often we ask Limelight for data (100 times per second)
         telemetry.setMsTransmissionInterval(11);
@@ -600,8 +603,8 @@ public class JudgingTeleOp extends LinearOpMode {
 
         InLDiffyServo.setPosition(LDServoPositions[3]);//3 no auto
         InRDiffyServo.setPosition(RDServoPositions[3]);//3 no auto
-        InClawServo.setPosition(ICServoPositions[0]);
-        OtClawServo.setPosition(OCServoPositions[0]);
+        InClawServo.setPosition(ICServoPositions[0]); // 0 is closed
+        OtClawServo.setPosition(OCServoPositions[1]); // 1 is closed
         OtWristServo.setPosition(OWServoPositions[0]);
         OtLinkageLServo.setPosition(OKLServoPositions[0]);
         OtLinkageRServo.setPosition(OKRServoPositions[0]);
@@ -639,7 +642,7 @@ public class JudgingTeleOp extends LinearOpMode {
             double divider = Math.abs(Math.max(FLPower, FRPower));
             divider = Math.abs(Math.max(divider, BLPower));
             divider = Math.abs(Math.max(divider, BRPower));
-            if(gamepad2.right_stick_x < 0.1 && divider != 1 && r >= 0.9){
+            if(gamepad2.right_stick_x < 0.1 && r > 0.65){
                 FLPower = FLPower / divider;
                 FRPower = FRPower / divider;
                 BLPower = BLPower / divider;
@@ -650,6 +653,8 @@ public class JudgingTeleOp extends LinearOpMode {
             // Send calculated power to wheels
             double rt = gamepad1.right_trigger;
             double lt = gamepad1.left_trigger;
+            boolean rB = gamepad1.right_bumper;
+            boolean lB = gamepad1.left_bumper;
             if(gamepad1.dpad_up || gamepad1.dpad_down || gamepad1.dpad_left || gamepad1.dpad_right) {
                 if(gamepad1.dpad_up) { //all positive
                     FLMotor.setPower(SlowModeSpeed[1]);
@@ -672,31 +677,31 @@ public class JudgingTeleOp extends LinearOpMode {
                     BLMotor.setPower(SlowModeSpeed[0]);
                     BRMotor.setPower(SlowModeSpeed[1]);
                 }
-            } else if (rt > 0.2 || lt > 0.2) {
-                if (-gamepad1.right_stick_y > 0) {
-                    if (rt > 0.2) {
-                        FLMotor.setPower(rt);
-                        FRMotor.setPower(-rt + Math.abs(gamepad1.right_stick_y));
-                        BLMotor.setPower(-rt + Math.abs(gamepad1.right_stick_y));
-                        BRMotor.setPower(rt);
+            }else if (rt > 0.2 || rB || lB || lt > 0.2) {
+                    if (-gamepad1.left_stick_y > 0) {
+                        if (rt > 0.2 || rB) {
+                            FLMotor.setPower(speedfor);
+                            FRMotor.setPower(speedbac + (Math.abs(gamepad1.left_stick_y) * 0.5));
+                            BLMotor.setPower(speedbac + (Math.abs(gamepad1.left_stick_y) * 0.5));
+                            BRMotor.setPower(speedfor);
+                        } else {
+                            FLMotor.setPower(speedbac + (Math.abs(gamepad1.left_stick_y) * 0.5));
+                            FRMotor.setPower(speedfor);
+                            BLMotor.setPower(speedfor);
+                            BRMotor.setPower(speedbac + (Math.abs(gamepad1.left_stick_y) * 0.5));
+                        }
                     } else {
-                        FLMotor.setPower(-lt + Math.abs(gamepad1.right_stick_y));
-                        FRMotor.setPower(lt);
-                        BLMotor.setPower(lt);
-                        BRMotor.setPower(-lt + Math.abs(gamepad1.right_stick_y));
-                    }
-                } else {
-                    if (rt > 0.2) {
-                        FLMotor.setPower(rt - Math.abs(gamepad1.right_stick_y));
-                        FRMotor.setPower(-rt);
-                        BLMotor.setPower(-rt);
-                        BRMotor.setPower(rt - Math.abs(gamepad1.right_stick_y));
-                    } else {
-                        FLMotor.setPower(-lt);
-                        FRMotor.setPower(lt - Math.abs(gamepad1.right_stick_y));
-                        BLMotor.setPower(lt - Math.abs(gamepad1.right_stick_y));
-                        BRMotor.setPower(-lt);
-                    }
+                        if (rt > 0.2 || rB) {
+                            FLMotor.setPower(speedfor - (Math.abs(gamepad1.left_stick_y) * 0.5));
+                            FRMotor.setPower(speedbac);
+                            BLMotor.setPower(speedbac);
+                            BRMotor.setPower(speedfor - (Math.abs(gamepad1.left_stick_y) * 0.5));
+                        } else {
+                            FLMotor.setPower(speedbac);
+                            FRMotor.setPower(speedfor - (Math.abs(gamepad1.left_stick_y) * 0.5));
+                            BLMotor.setPower(speedfor - (Math.abs(gamepad1.left_stick_y) * 0.5));
+                            BRMotor.setPower(speedbac);
+                        }
                 }
             } else {
                 FLMotor.setPower(FLPower);
@@ -727,8 +732,8 @@ public class JudgingTeleOp extends LinearOpMode {
 
             if (leftBumper && intakeManualMode && !inClawDelay && !oldLeftBumper) { //close Intake claw
                 new setInClawDelay(true).run();
-                if (inClawOpened) { InClawServo.setPosition(ICServoPositions[1]); } //close Intake Claw
-                else { InClawServo.setPosition(ICServoPositions[0]); }//open Intake Claw
+                if (inClawOpened) { InClawServo.setPosition(ICServoPositions[0]); } //close Intake Claw
+                else { InClawServo.setPosition(ICServoPositions[1]); }//open Intake Claw
                 timer.schedule(new setInClawDelay(false), 3 * DELAY_BETWEEN_MOVES);
                 inClawOpened = !inClawOpened;
             }
@@ -773,9 +778,9 @@ public class JudgingTeleOp extends LinearOpMode {
                 timer.schedule(new OtSlidesPosition(0, 0, 0, 1), 0 * DELAY_BETWEEN_MOVES);
 
                 timer.schedule(new MoveOtClawServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveOtLinkageServoPosition(0), 0 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtLinkageServoPosition(2), 0 * DELAY_BETWEEN_MOVES);
                 timer.schedule(new MoveOtCoaxialServoPosition(4), 4 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveOtClawServoPosition(0), 6 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtClawServoPosition(2), 10 * DELAY_BETWEEN_MOVES);//delay was 6
                 timer.schedule(new MoveOtElbowServosPosition(3), 9 * DELAY_BETWEEN_MOVES);
 //                if (!inClawOpened) timer.schedule(new MoveOtWristServoPosition(2), 5 *DELAY_BETWEEN_MOVES);
                 timer.schedule(new MoveOtWristServoPosition(1), 5 *DELAY_BETWEEN_MOVES);
@@ -785,21 +790,57 @@ public class JudgingTeleOp extends LinearOpMode {
                 timer.schedule(new MoveInDiffyServoPosition(2), 20 * DELAY_BETWEEN_MOVES);
                 timer.schedule(new MoveInElbowServosPosition(2), 20 * DELAY_BETWEEN_MOVES);
 
-//                timer.schedule(new MoveOtLinkageServoPosition(0), 18 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtLinkageServoPosition(0), 18 * DELAY_BETWEEN_MOVES);
                 timer.schedule(new MoveOtCoaxialServoPosition(2), 20 * DELAY_BETWEEN_MOVES);
                 timer.schedule(new MoveOtWristServoPosition(0), 20 * DELAY_BETWEEN_MOVES);
                 timer.schedule(new MoveOtElbowServosPosition(2), 20 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveOtCoaxialServoPosition(0), 20 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveOtElbowServosPosition(0), 24 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtCoaxialServoPosition(2), 20 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtElbowServosPosition(2), 24 * DELAY_BETWEEN_MOVES);
 
-                timer.schedule(new setIsInArmMoving(false), 30 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new setIsInDiffyMoving(false), 30 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new setIsOtArmMoving(false), 30 *DELAY_BETWEEN_MOVES);
-                timer.schedule(new setIsOtCoaxialMoving(false), 30 *DELAY_BETWEEN_MOVES);
-                timer.schedule(new setOtClawDelay(false), 30 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new setIsInArmMoving(false), 27 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new setIsInDiffyMoving(false), 27 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new setIsOtArmMoving(false), 27 *DELAY_BETWEEN_MOVES);
+                timer.schedule(new setIsOtCoaxialMoving(false), 27 *DELAY_BETWEEN_MOVES);
+                timer.schedule(new setOtClawDelay(false), 27 * DELAY_BETWEEN_MOVES);
 
                 otClawOpened = false;
                 inPosition = 2;
+//                new setIsInArmMoving(true).run();
+//                new setIsInDiffyMoving(true).run();
+//                new setIsOtArmMoving(true).run();
+//                new setIsOtCoaxialMoving(true).run();
+//                new setOtClawDelay(true).run();
+//
+//                timer.schedule(new OtSlidesPosition(0, 0, 0, 1), 0 * DELAY_BETWEEN_MOVES);
+//
+//                timer.schedule(new MoveOtClawServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
+//                timer.schedule(new MoveOtLinkageServoPosition(2), 0 * DELAY_BETWEEN_MOVES);
+//                timer.schedule(new MoveOtCoaxialServoPosition(4), 4 * DELAY_BETWEEN_MOVES);
+//                timer.schedule(new MoveOtClawServoPosition(2), 6 * DELAY_BETWEEN_MOVES);
+//                timer.schedule(new MoveOtElbowServosPosition(4), 9 * DELAY_BETWEEN_MOVES);
+////                if (!inClawOpened) timer.schedule(new MoveOtWristServoPosition(2), 5 *DELAY_BETWEEN_MOVES);
+//                timer.schedule(new MoveOtWristServoPosition(1), 5 *DELAY_BETWEEN_MOVES);
+//                timer.schedule(new MoveOtClawServoPosition(1), 15 * DELAY_BETWEEN_MOVES);
+//                timer.schedule(new OpenIn(), 15 * DELAY_BETWEEN_MOVES);
+//
+//                timer.schedule(new MoveInDiffyServoPosition(2), 20 * DELAY_BETWEEN_MOVES);
+//                timer.schedule(new MoveInElbowServosPosition(2), 20 * DELAY_BETWEEN_MOVES);
+//
+//                timer.schedule(new MoveOtLinkageServoPosition(0), 18 * DELAY_BETWEEN_MOVES);
+//                timer.schedule(new MoveOtCoaxialServoPosition(2), 20 * DELAY_BETWEEN_MOVES);
+//                timer.schedule(new MoveOtWristServoPosition(0), 20 * DELAY_BETWEEN_MOVES);
+//                timer.schedule(new MoveOtElbowServosPosition(2), 20 * DELAY_BETWEEN_MOVES);
+//                timer.schedule(new MoveOtCoaxialServoPosition(2), 20 * DELAY_BETWEEN_MOVES);
+//                timer.schedule(new MoveOtElbowServosPosition(2), 24 * DELAY_BETWEEN_MOVES);
+//
+//                timer.schedule(new setIsInArmMoving(false), 30 * DELAY_BETWEEN_MOVES);
+//                timer.schedule(new setIsInDiffyMoving(false), 30 * DELAY_BETWEEN_MOVES);
+//                timer.schedule(new setIsOtArmMoving(false), 30 *DELAY_BETWEEN_MOVES);
+//                timer.schedule(new setIsOtCoaxialMoving(false), 30 *DELAY_BETWEEN_MOVES);
+//                timer.schedule(new setOtClawDelay(false), 30 * DELAY_BETWEEN_MOVES);
+//
+//                otClawOpened = false;
+//                inPosition = 2;
 
             }else if (circlePressed && !oldCirclePressed && !isOtArmMoving && outtakeIndex != 0) { //pickup specimen from wall outtakeIndex = 0
                 new setIsOtArmMoving(true).run();
@@ -899,7 +940,7 @@ public class JudgingTeleOp extends LinearOpMode {
                 }else{
                     InSlide.setPower(-gamepad2.left_stick_y);
                 }
-            }else if(-gamepad2.left_stick_y > 0 && Math.abs(InSlide.getCurrentPosition()) < 1200){
+            }else if(-gamepad2.left_stick_y > 0 && Math.abs(InSlide.getCurrentPosition()) < 1100){
                 if(babyMode){
                     InSlide.setPower(-gamepad2.left_stick_y * 0.65);
                 }else{
@@ -916,6 +957,9 @@ public class JudgingTeleOp extends LinearOpMode {
                     timer.schedule(new MoveInDiffyServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
                     timer.schedule(new MoveInElbowServosPosition(2), 0 * DELAY_BETWEEN_MOVES);
                     timer.schedule(new MoveInElbowServosPosition(0), 1 * DELAY_BETWEEN_MOVES);
+                }else if (inPosition == 2){
+                    timer.schedule(new MoveInDiffyServoPosition(0), 0 * DELAY_BETWEEN_MOVES);
+                    timer.schedule(new MoveInElbowServosPosition(0), 0 *DELAY_BETWEEN_MOVES);
                 }else{
                     timer.schedule(new MoveInElbowServosPosition(0), 0 *DELAY_BETWEEN_MOVES);
                 }
@@ -952,9 +996,12 @@ public class JudgingTeleOp extends LinearOpMode {
             } else if (dpadUpPressed && !oldUpDpadPressed && !isInArmMoving && inPosition != 3) { //position for transferring sample to outtake intakeIndex = 3
                 new setIsInArmMoving(true).run();
                 new setIsInDiffyMoving(true).run();
-
-                timer.schedule(new MoveInDiffyServoPosition(4), 0 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveInElbowServosPosition(4), 2 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInClawServoPosition(2), 1 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInDiffyServoPosition(2), 0 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInElbowServosPosition(2), 0 *DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInClawServoPosition(0), 10 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInDiffyServoPosition(4), 10 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInElbowServosPosition(4), 11 * DELAY_BETWEEN_MOVES);
                 timer.schedule(new IntakeExtension(0, 1), 0 * DELAY_BETWEEN_MOVES);
 
                 timer.schedule(new setIsInArmMoving(false), 5 * DELAY_BETWEEN_MOVES);
@@ -990,137 +1037,140 @@ public class JudgingTeleOp extends LinearOpMode {
             }
 
             if(leftBumper && !intakeManualMode && inPosition == 1 && !isInDiffyMoving && !oldLeftBumper) {
-                litty.pipelineSwitch(1);//blue
-                LLResult seeingStuff = litty.getLatestResult();
-                LLResultTypes.ColorResult colorResult = null;
-                if (seeingStuff != null && seeingStuff.isValid()) {
-                    List<LLResultTypes.ColorResult> colorResults = seeingStuff.getColorResults();
-                    if (colorResults != null && !colorResults.isEmpty()) {
-                        colorResult = colorResults.get(0);
-                    }
+//                litty.pipelineSwitch(1);//blue
+//                LLResult seeingStuff = litty.getLatestResult();
+//                LLResultTypes.ColorResult colorResult = null;
+//                if (seeingStuff != null && seeingStuff.isValid()) {
+//                    List<LLResultTypes.ColorResult> colorResults = seeingStuff.getColorResults();
+//                    if (colorResults != null && !colorResults.isEmpty()) {
+//                        colorResult = colorResults.get(0);
+//                    }
+//                }
+//                else if (seeingStuff == null || !seeingStuff.isValid() || colorResult == null) {
+//                    litty.pipelineSwitch(2);//yellow
+//                    seeingStuff = litty.getLatestResult();
+//                    if (seeingStuff != null && seeingStuff.isValid()) {
+//                        List<LLResultTypes.ColorResult> colorResults = seeingStuff.getColorResults();
+//                        colorResults = seeingStuff.getColorResults();
+//                        if (colorResults != null && !colorResults.isEmpty()) {
+//                            colorResult = colorResults.get(0);
+//                        }
+//                    }
+//                }
+//                if (colorResult != null) {
+//                    List<List<Double>> targetCorners = colorResult.getTargetCorners();
+//                    if (!targetCorners.isEmpty() && targetCorners.size() > 3) {
+//                        List<Double> c1 = targetCorners.get(0);
+//                        List<Double> c2 = targetCorners.get(1);
+//                        List<Double> c3 = targetCorners.get(2);
+//                        List<Double> c4 = targetCorners.get(3);
+//                        telemetry.addData("Corner 1 X", targetCorners.get(0).get(0));
+//                        telemetry.addData("Corner 1 Y", targetCorners.get(0).get(1));
+//                        telemetry.addData("Corner 2 X", targetCorners.get(1).get(0));
+//                        telemetry.addData("Corner 2 Y", targetCorners.get(1).get(1));
+//                        telemetry.addData("Corner 3 X", targetCorners.get(2).get(0));
+//                        telemetry.addData("Corner 3 Y", targetCorners.get(2).get(1));
+//                        telemetry.addData("Corner 4 X", targetCorners.get(3).get(0));
+//                        telemetry.addData("Corner 4 Y", targetCorners.get(3).get(1));
+//                        double c1c2XOffset = c1.get(0) - c2.get(0);
+//                        double c1c2YOffset = c1.get(1) - c2.get(1);
+//                        double c3c2XOffset = c3.get(0) - c2.get(0);
+//                        double c3c2YOffset = c3.get(1) - c2.get(1);
+//                        double c4c3XOffset = c4.get(0) - c3.get(0);
+//                        double c3c4YOffset = c3.get(1) - c4.get(1);
+//                        double c1c2D = Math.sqrt(Math.pow(c1c2XOffset, 2) + Math.pow(c1c2YOffset, 2));
+//                        double c2c3D = Math.sqrt(Math.pow(c3c2XOffset, 2) + Math.pow(c3c2YOffset, 2));
+//                        double Angleish = 0;
+//                        boolean rightSideUp = true;
+//                        boolean isHorizontal = true;
+//
+//
+//                        if (c1c2D > c2c3D) {
+//                            rightSideUp = true;
+//                        } else if (c1c2D <= c2c3D) {
+//                            rightSideUp = false;
+//                        }
+//                        if (rightSideUp) {
+//                            Angleish = Math.toDegrees(Math.atan2(c3c4YOffset, c4c3XOffset));
+//                            telemetry.addData("x:", c4c3XOffset);
+//                            telemetry.addData("y:", c3c4YOffset);
+//                        }
+//                        if (!rightSideUp) {
+//                            Angleish = Math.toDegrees(-Math.atan2(c3c2YOffset, c3c2XOffset));
+//                            telemetry.addData("x:", c3c2XOffset);
+//                            telemetry.addData("y:", c3c2YOffset);
+//                        }
+//                        Angleish += 90;
+//                        if (Angleish > 90) {
+//                            Angleish = -180 + Angleish;
+//                        } else if (Angleish < -90) {
+//                            Angleish = 180 + Angleish;
+//                        }
+                telemetry.addData("Yeah we trying", " at least");
+                int pippy = -1;
+                double Angleish = -999;
+                if(LimeLightPipeline.Align(1) != -999) {
+                    Angleish = LimeLightPipeline.Align(1);
+                    pippy = 1;
+                }else if(LimeLightPipeline.Align(2) != -999) {
+                    Angleish = LimeLightPipeline.Align(2);
+                    pippy = 2;
                 }
-                else if (seeingStuff == null || !seeingStuff.isValid() || colorResult == null) {
-                    litty.pipelineSwitch(2);//yellow
-                    seeingStuff = litty.getLatestResult();
-                    if (seeingStuff != null && seeingStuff.isValid()) {
-                        List<LLResultTypes.ColorResult> colorResults = seeingStuff.getColorResults();
-                        colorResults = seeingStuff.getColorResults();
-                        if (colorResults != null && !colorResults.isEmpty()) {
-                            colorResult = colorResults.get(0);
+                if(pippy != -1){
+                    telemetry.addData("Angle:", Angleish);
+//                        degrees = colorResult.getTargetYDegrees();
+
+                    telemetry.addData("Angle Down", LimeLightPipeline.UpNDown(pippy));
+
+
+                    if (Angleish > 5 && !isInDiffyMoving) {
+                        if (RDServoPositions[1] + (Angleish / 255) <= 0.75 && LDServoPositions[1] - (Angleish / 255) >= 0.25) {//spin 180 so no suicide
+                            new setIsInArmMoving(true).run();
+                            new setIsInDiffyMoving(true).run();
+                            LDServoPositions[1] = LDServoPositions[1] - (Angleish / 270);
+                            RDServoPositions[1] = RDServoPositions[1] + (Angleish / 270);
+                        } else {
+                            new setIsInArmMoving(true).run();
+                            new setIsInDiffyMoving(true).run();
+                            LDServoPositions[1] = LDServoPositions[1] + ((180 - Angleish) / 270);
+                            RDServoPositions[1] = RDServoPositions[1] - ((180 - Angleish) / 270);
                         }
+                        new MoveInDiffyServoPosition(1).run();
+                        timer.schedule(new setIsInDiffyMoving(false), 200);
+
+                    } else if (Angleish < -5 && !isInDiffyMoving) {
+                        if (RDServoPositions[1] >= 0.25 && LDServoPositions[1] <= 0.75) { //spin 180 so no suicide
+                            new setIsInArmMoving(true).run();
+                            new setIsInDiffyMoving(true).run();
+                            LDServoPositions[1] = LDServoPositions[1] + (-Angleish / 270);
+                            RDServoPositions[1] = RDServoPositions[1] - (-Angleish / 270);
+                        } else {
+                            new setIsInArmMoving(true).run();
+                            new setIsInDiffyMoving(true).run();
+                            LDServoPositions[1] = LDServoPositions[1] - ((180 + Angleish) / 270);
+                            RDServoPositions[1] = RDServoPositions[1] + ((180 + Angleish) / 270);
+                        }
+
+                        new MoveInDiffyServoPosition(1).run();
+                        timer.schedule(new setIsInDiffyMoving(false), 200);
+
                     }
-                }
-                if (colorResult != null) {
-                    List<List<Double>> targetCorners = colorResult.getTargetCorners();
-                    if (!targetCorners.isEmpty() && targetCorners.size() > 3) {
-                        List<Double> c1 = targetCorners.get(0);
-                        List<Double> c2 = targetCorners.get(1);
-                        List<Double> c3 = targetCorners.get(2);
-                        List<Double> c4 = targetCorners.get(3);
-                        telemetry.addData("Corner 1 X", targetCorners.get(0).get(0));
-                        telemetry.addData("Corner 1 Y", targetCorners.get(0).get(1));
-                        telemetry.addData("Corner 2 X", targetCorners.get(1).get(0));
-                        telemetry.addData("Corner 2 Y", targetCorners.get(1).get(1));
-                        telemetry.addData("Corner 3 X", targetCorners.get(2).get(0));
-                        telemetry.addData("Corner 3 Y", targetCorners.get(2).get(1));
-                        telemetry.addData("Corner 4 X", targetCorners.get(3).get(0));
-                        telemetry.addData("Corner 4 Y", targetCorners.get(3).get(1));
-                        double c1c2XOffset = c1.get(0) - c2.get(0);
-                        double c1c2YOffset = c1.get(1) - c2.get(1);
-                        double c3c2XOffset = c3.get(0) - c2.get(0);
-                        double c3c2YOffset = c3.get(1) - c2.get(1);
-                        double c4c3XOffset = c4.get(0) - c3.get(0);
-                        double c3c4YOffset = c3.get(1) - c4.get(1);
-                        double c1c2D = Math.sqrt(Math.pow(c1c2XOffset, 2) + Math.pow(c1c2YOffset, 2));
-                        double c2c3D = Math.sqrt(Math.pow(c3c2XOffset, 2) + Math.pow(c3c2YOffset, 2));
-                        double Angleish = 0;
-                        boolean rightSideUp = true;
-                        boolean isHorizontal = true;
-
-
-                        if (c1c2D > c2c3D) {
-                            rightSideUp = true;
-                        } else if (c1c2D <= c2c3D) {
-                            rightSideUp = false;
-                        }
-                        if (rightSideUp) {
-                            Angleish = Math.toDegrees(Math.atan2(c3c4YOffset, c4c3XOffset));
-                            telemetry.addData("x:", c4c3XOffset);
-                            telemetry.addData("y:", c3c4YOffset);
-                        }
-                        if (!rightSideUp) {
-                            Angleish = Math.toDegrees(-Math.atan2(c3c2YOffset, c3c2XOffset));
-                            telemetry.addData("x:", c3c2XOffset);
-                            telemetry.addData("y:", c3c2YOffset);
-                        }
-                        if (Angleish > 90) {
-                            Angleish = -180 + Angleish;
-                        } else if (Angleish < -90) {
-                            Angleish = 180 + Angleish;
-                        }
-                        if(Angleish <= 0){
-                            Angleish += 90;
-                        }else if(Angleish > 0){
-                            Angleish -= 90;
-                        }
-                        telemetry.addData("Angle:", Angleish);
-                        degrees = colorResult.getTargetYDegrees();
-
-                        telemetry.addData("Angle Down", colorResult.getTargetYDegrees());
-                        telemetry.addData("Angle Across", colorResult.getTargetXDegrees());
-                        telemetry.addData("Whatever this is", colorResult.getTargetYPixels());
-                        telemetry.addData("Whatever this is across", colorResult.getTargetXPixels());
-
-
-                        if (Angleish > 5 && !isInDiffyMoving) {
-                            if (RDServoPositions[1] + (Angleish / 255) <= 0.75 && LDServoPositions[1] - (Angleish / 255) >= 0.25) {//spin 180 so no suicide
-                                new setIsInArmMoving(true).run();
-                                new setIsInDiffyMoving(true).run();
-                                LDServoPositions[1] = LDServoPositions[1] - (Angleish / 270);
-                                RDServoPositions[1] = RDServoPositions[1] + (Angleish / 270);
-                            } else {
-                                new setIsInArmMoving(true).run();
-                                new setIsInDiffyMoving(true).run();
-                                LDServoPositions[1] = LDServoPositions[1] + ((180 - Angleish) / 270);
-                                RDServoPositions[1] = RDServoPositions[1] - ((180 - Angleish) / 270);
-                            }
-                            new MoveInDiffyServoPosition(1).run();
-                            timer.schedule(new setIsInDiffyMoving(false), 200);
-
-                        } else if (Angleish < -5 && !isInDiffyMoving) {
-                            if (RDServoPositions[1] >= 0.25 && LDServoPositions[1] <= 0.75) { //spin 180 so no suicide
-                                new setIsInArmMoving(true).run();
-                                new setIsInDiffyMoving(true).run();
-                                LDServoPositions[1] = LDServoPositions[1] + (-Angleish / 270);
-                                RDServoPositions[1] = RDServoPositions[1] - (-Angleish / 270);
-                            } else {
-                                new setIsInArmMoving(true).run();
-                                new setIsInDiffyMoving(true).run();
-                                LDServoPositions[1] = LDServoPositions[1] - ((180 + Angleish) / 270);
-                                RDServoPositions[1] = RDServoPositions[1] + ((180 + Angleish) / 270);
-                            }
-
-                            new MoveInDiffyServoPosition(1).run();
-                            timer.schedule(new setIsInDiffyMoving(false), 200);
-
-                        }
-                        //none of this works
-                        degrees = ((colorResult.getTargetYDegrees() + 5) * 10);
-                        if(InSlide.getCurrentPosition() >= (int) -degrees && Math.abs(InSlide.getCurrentPosition()) + degrees <= 1200){
-                            new setIsInArmMoving(true);
-                            timer.schedule(new IntakeExtension(InSlide.getCurrentPosition() + ((int) degrees), 1), 0 * DELAY_BETWEEN_MOVES);
-                        }
-                        timer.schedule(new MoveInElbowServosPosition(0), 4 * DELAY_BETWEEN_MOVES);
-                        new setInClawDelay(true);
-                        timer.schedule(new OpenIn(), 0);
-                        timer.schedule(new CloseIn(), 8 * DELAY_BETWEEN_MOVES);
-                        timer.schedule(new MoveInDiffyServoPosition(2), 12 * DELAY_BETWEEN_MOVES);
-                        timer.schedule(new MoveInElbowServosPosition(2), 12 * DELAY_BETWEEN_MOVES);
-                        timer.schedule(new setInClawDelay(false), 10 * DELAY_BETWEEN_MOVES);
-                        timer.schedule(new setIsInArmMoving(false), 14 * DELAY_BETWEEN_MOVES);
-                        timer.schedule(new setIsInDiffyMoving(false), 14 * DELAY_BETWEEN_MOVES);
-                        inPosition = 2;
+                    //none of this works
+                    degrees = ((LimeLightPipeline.UpNDown(pippy)+ 5) * 10);
+                    if(InSlide.getCurrentPosition() >= (int) -degrees && Math.abs(InSlide.getCurrentPosition()) + degrees <= 1200){
+                        new setIsInArmMoving(true);
+                        timer.schedule(new IntakeExtension(InSlide.getCurrentPosition() + ((int) degrees), 1), 0 * DELAY_BETWEEN_MOVES);
                     }
+                    timer.schedule(new MoveInElbowServosPosition(0), 4 * DELAY_BETWEEN_MOVES);
+                    new setInClawDelay(true);
+                    timer.schedule(new OpenIn(), 0);
+                    timer.schedule(new CloseIn(), 8 * DELAY_BETWEEN_MOVES);
+                    timer.schedule(new MoveInDiffyServoPosition(2), 12 * DELAY_BETWEEN_MOVES);
+                    timer.schedule(new MoveInElbowServosPosition(2), 12 * DELAY_BETWEEN_MOVES);
+                    timer.schedule(new setInClawDelay(false), 10 * DELAY_BETWEEN_MOVES);
+                    timer.schedule(new setIsInArmMoving(false), 14 * DELAY_BETWEEN_MOVES);
+                    timer.schedule(new setIsInDiffyMoving(false), 14 * DELAY_BETWEEN_MOVES);
+                    inPosition = 2;
                 }
             }
 
@@ -1133,7 +1183,6 @@ public class JudgingTeleOp extends LinearOpMode {
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.addData("L Dif Pos:", + LDServoPositions[1]);
             telemetry.addData("R Dif Pos:", + RDServoPositions[1]);
-            telemetry.addData("degrees", + degrees);
             //   telemetry.addData("INDEX", index % LEServoPositions.length);
 
 

@@ -114,7 +114,7 @@ public class SharkbaitTeleOpBlue extends LinearOpMode {
     private boolean inClawDelay = false;
     private boolean otClawDelay = false;
     private boolean diffyRotateDelay = false;
-    private boolean inClawOpened = true;
+    private boolean inClawOpened = false;
     private boolean otClawOpened = true;
 
 
@@ -347,6 +347,22 @@ public class SharkbaitTeleOpBlue extends LinearOpMode {
                 OtSlideB.setPower(i);
             }
         }
+        class IntakeExtension extends TimerTask {
+            int i;
+            double power;
+
+            public IntakeExtension(int i, double power) {
+                this.i = i;
+                this.power = power;
+            }
+            public void run() {
+                InSlide.setTargetPosition(i);
+                InSlide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                InSlide.setPower(power);
+                InSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            }
+        }
+
 
 
         class MoveInElbowServosPosition extends TimerTask {
@@ -512,7 +528,7 @@ public class SharkbaitTeleOpBlue extends LinearOpMode {
         BRMotor.setDirection(DcMotor.Direction.FORWARD);
 
 
-        InSlide.setDirection(DcMotor.Direction.REVERSE);
+        InSlide.setDirection(DcMotor.Direction.FORWARD);
         OtSlideF.setDirection(DcMotor.Direction.REVERSE); //all 3 of these are backwards
         OtSlideM.setDirection(DcMotor.Direction.FORWARD);
         OtSlideB.setDirection(DcMotor.Direction.REVERSE);
@@ -623,7 +639,7 @@ public class SharkbaitTeleOpBlue extends LinearOpMode {
             double divider = Math.abs(Math.max(FLPower, FRPower));
             divider = Math.abs(Math.max(divider, BLPower));
             divider = Math.abs(Math.max(divider, BRPower));
-            if(gamepad2.right_stick_x < 0.1 && divider != 1){
+            if(gamepad2.right_stick_x < 0.1 && r > 0.65){
                 FLPower = FLPower / divider;
                 FRPower = FRPower / divider;
                 BLPower = BLPower / divider;
@@ -725,8 +741,8 @@ public class SharkbaitTeleOpBlue extends LinearOpMode {
 
             if (leftBumper && intakeManualMode && !inClawDelay && !oldLeftBumper) { //close Intake claw
                 new setInClawDelay(true).run();
-                if (inClawOpened) { InClawServo.setPosition(ICServoPositions[1]); } //open Intake Claw
-                else { InClawServo.setPosition(ICServoPositions[0]); }//close Intake Claw
+                if (inClawOpened) { InClawServo.setPosition(ICServoPositions[0]); } //close Intake Claw
+                else { InClawServo.setPosition(ICServoPositions[1]); }//open Intake Claw
                 timer.schedule(new setInClawDelay(false), 3 * DELAY_BETWEEN_MOVES);
                 inClawOpened = !inClawOpened;
             }
@@ -763,21 +779,42 @@ public class SharkbaitTeleOpBlue extends LinearOpMode {
             OtSlideB.setPower(gamepad2.right_stick_y);
             }
            if (crossPressed && !oldCrossPressed && !isOtArmMoving) { //pickup sample from intake outtakeIndex = 3
+               new setIsInArmMoving(true).run();
+               new setIsInDiffyMoving(true).run();
                new setIsOtArmMoving(true).run();
                new setIsOtCoaxialMoving(true).run();
                new setOtClawDelay(true).run();
+
+               timer.schedule(new OtSlidesPosition(0, 0, 0, 1), 0 * DELAY_BETWEEN_MOVES);
+
                timer.schedule(new MoveOtClawServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
                timer.schedule(new MoveOtLinkageServoPosition(2), 0 * DELAY_BETWEEN_MOVES);
                timer.schedule(new MoveOtCoaxialServoPosition(4), 4 * DELAY_BETWEEN_MOVES);
-               timer.schedule(new MoveOtElbowServosPosition(3), 8 * DELAY_BETWEEN_MOVES);
-               if (!inClawOpened) timer.schedule(new MoveOtWristServoPosition(0), 6 *DELAY_BETWEEN_MOVES);
-               else timer.schedule(new MoveOtWristServoPosition(1), 6 *DELAY_BETWEEN_MOVES);
-               if (otClawOpened) timer.schedule(new MoveOtClawServoPosition(0), 6 * DELAY_BETWEEN_MOVES);
+               timer.schedule(new MoveOtClawServoPosition(2), 10 * DELAY_BETWEEN_MOVES);//delay was 6
+               timer.schedule(new MoveOtElbowServosPosition(3), 9 * DELAY_BETWEEN_MOVES);
+//                if (!inClawOpened) timer.schedule(new MoveOtWristServoPosition(2), 5 *DELAY_BETWEEN_MOVES);
+               timer.schedule(new MoveOtWristServoPosition(1), 5 *DELAY_BETWEEN_MOVES);
+               timer.schedule(new MoveOtClawServoPosition(1), 15 * DELAY_BETWEEN_MOVES);
+               timer.schedule(new OpenIn(), 15 * DELAY_BETWEEN_MOVES);
 
+               timer.schedule(new MoveInDiffyServoPosition(2), 20 * DELAY_BETWEEN_MOVES);
+               timer.schedule(new MoveInElbowServosPosition(2), 20 * DELAY_BETWEEN_MOVES);
 
-               timer.schedule(new setIsOtArmMoving(false), 10 *DELAY_BETWEEN_MOVES);
-               timer.schedule(new setIsOtCoaxialMoving(false), 10 *DELAY_BETWEEN_MOVES);
-               timer.schedule(new setOtClawDelay(false), 10 *DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveOtLinkageServoPosition(0), 18 * DELAY_BETWEEN_MOVES);
+               timer.schedule(new MoveOtCoaxialServoPosition(2), 20 * DELAY_BETWEEN_MOVES);
+               timer.schedule(new MoveOtWristServoPosition(0), 20 * DELAY_BETWEEN_MOVES);
+               timer.schedule(new MoveOtElbowServosPosition(2), 20 * DELAY_BETWEEN_MOVES);
+               timer.schedule(new MoveOtCoaxialServoPosition(2), 20 * DELAY_BETWEEN_MOVES);
+               timer.schedule(new MoveOtElbowServosPosition(2), 24 * DELAY_BETWEEN_MOVES);
+
+               timer.schedule(new setIsInArmMoving(false), 27 * DELAY_BETWEEN_MOVES);
+               timer.schedule(new setIsInDiffyMoving(false), 27 * DELAY_BETWEEN_MOVES);
+               timer.schedule(new setIsOtArmMoving(false), 27 *DELAY_BETWEEN_MOVES);
+               timer.schedule(new setIsOtCoaxialMoving(false), 27 *DELAY_BETWEEN_MOVES);
+               timer.schedule(new setOtClawDelay(false), 27 * DELAY_BETWEEN_MOVES);
+
+               otClawOpened = false;
+               inPosition = 2;
 
 
            }else if (circlePressed && !oldCirclePressed && !isOtArmMoving && outtakeIndex != 0) { //pickup specimen from wall outtakeIndex = 0
@@ -873,37 +910,43 @@ public class SharkbaitTeleOpBlue extends LinearOpMode {
 
            }
 
-            if(gamepad2.left_stick_y < 0 && Math.abs(InSlide.getCurrentPosition()) < 1200){
+            if(-gamepad2.left_stick_y <= 0){
                 if(babyMode){
-                    InSlide.setPower(gamepad2.left_stick_y * 0.4);
+                    InSlide.setPower(-gamepad2.left_stick_y * 0.65);
                 }else{
-                    InSlide.setPower(gamepad2.left_stick_y);
+                    InSlide.setPower(-gamepad2.left_stick_y);
                 }
-            }else if(gamepad2.right_stick_y >= 0){
+            }else if(-gamepad2.left_stick_y > 0 && Math.abs(InSlide.getCurrentPosition()) < 1100){
                 if(babyMode){
-                    InSlide.setPower(gamepad2.left_stick_y * 0.4);
+                    InSlide.setPower(-gamepad2.left_stick_y * 0.65);
                 }else{
-                    InSlide.setPower(gamepad2.left_stick_y);
+                    InSlide.setPower(-gamepad2.left_stick_y);
                 }
             } else {
-                InSlide.setPower(0
-                );
+                InSlide.setPower(0);
             }
 
 
             if (dpadDownPressed && !oldDownDpadPressed && !isInArmMoving) { //intake position intakeIndex = 0
                 new setIsInArmMoving(true).run();
-                //new setIsInDiffyMoving(true).run();
-                //timer.schedule(new MoveInDiffyServoPosition(0), 0 * DELAY_BETWEEN_MOVES);
-                timer.schedule(new MoveInElbowServosPosition(0), 0 *DELAY_BETWEEN_MOVES);
+                if(inPosition == 3 || inPosition == 4){
+                    timer.schedule(new MoveInDiffyServoPosition(1), 0 * DELAY_BETWEEN_MOVES);
+                    timer.schedule(new MoveInElbowServosPosition(2), 0 * DELAY_BETWEEN_MOVES);
+                    timer.schedule(new MoveInElbowServosPosition(0), 1 * DELAY_BETWEEN_MOVES);
+                }else if (inPosition == 2){
+                    timer.schedule(new MoveInDiffyServoPosition(0), 0 * DELAY_BETWEEN_MOVES);
+                    timer.schedule(new MoveInElbowServosPosition(0), 0 *DELAY_BETWEEN_MOVES);
+                }else{
+                    timer.schedule(new MoveInElbowServosPosition(0), 0 *DELAY_BETWEEN_MOVES);
+                }
                 timer.schedule(new setIsInArmMoving(false), 2 *DELAY_BETWEEN_MOVES);
-                //timer.schedule(new setIsInDiffyMoving(false), 4 *DELAY_BETWEEN_MOVES);
                 inPosition = 0;
             } else if (dpadRightPressed && !oldRightDpadPressed && !isInArmMoving) { //position for getting over submersible walls intakeIndex = 2
                 //new setIntakeManualMode(false).run();
                 new setIsInArmMoving(true).run();
                 new setIsInDiffyMoving(true).run();
                 //timer.schedule(new InSlidePosition(1, 1), 0 * DELAY_BETWEEN_MOVES);
+                if (inClawOpened) timer.schedule(new MoveInClawServoPosition(2), 0);
                 timer.schedule(new MoveInDiffyServoPosition(2), 0 * DELAY_BETWEEN_MOVES);
                 timer.schedule(new MoveInElbowServosPosition(2), 0 *DELAY_BETWEEN_MOVES);
 
@@ -916,7 +959,9 @@ public class SharkbaitTeleOpBlue extends LinearOpMode {
                 new setIsInDiffyMoving(true).run();
                 LDServoPositions[1] = 0.5;
                 RDServoPositions[1] = 0.5;
-                timer.schedule(new MoveInElbowServosPosition(5), 0 * DELAY_BETWEEN_MOVES);
+                if(inPosition != 1 && inPosition != 0){
+                    timer.schedule(new MoveInElbowServosPosition(5), 0 * DELAY_BETWEEN_MOVES);
+                }
                 timer.schedule(new MoveInDiffyServoPosition(1), 2 * DELAY_BETWEEN_MOVES);
                 timer.schedule(new MoveInElbowServosPosition(1), 1 *DELAY_BETWEEN_MOVES);
 
@@ -925,14 +970,21 @@ public class SharkbaitTeleOpBlue extends LinearOpMode {
                 timer.schedule(new setIsInDiffyMoving(false), 4 *DELAY_BETWEEN_MOVES);
                 inPosition = 1;
             } else if (dpadUpPressed && !oldUpDpadPressed && !isInArmMoving) { //position for transferring sample to outtake intakeIndex = 3
-               new setIsInArmMoving(true).run();
-               new setIsInDiffyMoving(true).run();
-               timer.schedule(new MoveInDiffyServoPosition(4), 0 * DELAY_BETWEEN_MOVES);
-               timer.schedule(new MoveInElbowServosPosition(4), 2 *DELAY_BETWEEN_MOVES);
+                new setIsInArmMoving(true).run();
+                new setIsInDiffyMoving(true).run();
+                timer.schedule(new MoveInClawServoPosition(2), 1 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInDiffyServoPosition(2), 0 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInElbowServosPosition(2), 0 *DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInClawServoPosition(0), 10 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInDiffyServoPosition(4), 10 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new MoveInElbowServosPosition(4), 11 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new IntakeExtension(0, 1), 0 * DELAY_BETWEEN_MOVES);
 
-               timer.schedule(new setIsInArmMoving(false), 5 *DELAY_BETWEEN_MOVES);
-               timer.schedule(new setIsInDiffyMoving(false), 5 *DELAY_BETWEEN_MOVES);
-               inPosition = 3;
+                timer.schedule(new setIsInArmMoving(false), 5 * DELAY_BETWEEN_MOVES);
+                timer.schedule(new setIsInDiffyMoving(false), 5 * DELAY_BETWEEN_MOVES);
+
+                inPosition = 3;
+
 
                 /*
                 new setIsOtArmMoving(true).run();
@@ -1050,6 +1102,7 @@ public class SharkbaitTeleOpBlue extends LinearOpMode {
                             telemetry.addData("x:", c3c2XOffset);
                             telemetry.addData("y:", c3c2YOffset);
                         }
+                        Angleish += 90;
                         if (Angleish > 90) {
                             Angleish = -180 + Angleish;
                         } else if (Angleish < -90) {

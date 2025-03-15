@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode;
 
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
-
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -21,7 +19,7 @@ public class LimeLightPipeline {
     }
 
     public static double Align(int pipeline){
-        double Angleish = 0;
+        double Angleish = -999;
         litty.pipelineSwitch(pipeline);
         LLResult seeingStuff = litty.getLatestResult();
         LLResultTypes.ColorResult colorResult = null;
@@ -56,13 +54,9 @@ public class LimeLightPipeline {
                 }
                 if (rightSideUp) {
                     Angleish = Math.toDegrees(Math.atan2(c3c4YOffset, c4c3XOffset));
-                    telemetry.addData("x:", c4c3XOffset);
-                    telemetry.addData("y:", c3c4YOffset);
                 }
                 if (!rightSideUp) {
                     Angleish = Math.toDegrees(-Math.atan2(c3c2YOffset, c3c2XOffset));
-                    telemetry.addData("x:", c3c2XOffset);
-                    telemetry.addData("y:", c3c2YOffset);
                 }
                 Angleish += 90;
                 if (Angleish > 90) {
@@ -73,5 +67,21 @@ public class LimeLightPipeline {
             }
         }
         return Angleish;
+    }
+    public static double UpNDown(int pipeline){
+        double UpNDown = -999;
+        litty.pipelineSwitch(pipeline);
+        LLResult seeingStuff = litty.getLatestResult();
+        LLResultTypes.ColorResult colorResult = null;
+        if (seeingStuff != null && seeingStuff.isValid()) {
+            List<LLResultTypes.ColorResult> colorResults = seeingStuff.getColorResults();
+            if (colorResults != null && !colorResults.isEmpty()) {
+                colorResult = colorResults.get(0);
+            }
+        }
+        if (colorResult != null) {
+            UpNDown = colorResult.getTargetYDegrees();
+        }
+        return UpNDown;
     }
 }
